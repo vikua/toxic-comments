@@ -53,6 +53,8 @@ class NNClassifier(object):
         reduce_learning_rate = tf.keras.callbacks.ReduceLROnPlateau(monitor='val_loss', 
                                                                     patience=2, 
                                                                     min_lr=0.0001)
+        model_checkpoint = tf.keras.callbacks.ModelCheckpoint('/tmp/toxic_base.chkp', 
+                                                              save_best_only=True)
 
         self.model.compile(optimizer=tf.train.AdamOptimizer(0.01), 
                            loss='binary_crossentropy',
@@ -62,7 +64,7 @@ class NNClassifier(object):
                                  validation_split=0.25,
                                  batch_size=batch_size,
                                  epochs=epochs,
-                                 callbacks=[early_stopping, reduce_learning_rate],
+                                 callbacks=[early_stopping, reduce_learning_rate, model_checkpoints],
                                  verbose=1)
         return history
 
