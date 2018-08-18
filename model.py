@@ -47,8 +47,11 @@ class NNClassifier(object):
         epochs = kwargs.pop('epochs', 5)
         batch_size = kwargs.pop('batch_size', 128)
 
+        print('Building vocabulary and vectorizing data...')
         self._build_vocabulary(data)
         X = self._vectorize(data)
+        print('Done!')
+
 
         early_stopping = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=3)
         reduce_learning_rate = tf.keras.callbacks.ReduceLROnPlateau(monitor='val_loss', 
