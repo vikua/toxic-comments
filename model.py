@@ -12,6 +12,18 @@ class VocabularyProcessor(object):
         self._vocab = None
         self._word_to_index = None
 
+    @property
+    def max_seq_len(self):
+        return self._max_seq_len
+
+    @property
+    def vocab(self):
+        return self._vocab
+
+    @property
+    def word_to_index(self):
+        return self._word_to_index
+
     def fit(self, data): 
         self._max_seq_len = max([len(sentence) for sentence in data])
 
@@ -43,8 +55,9 @@ class VocabularyProcessor(object):
 
 class NNClassifier(object):
 
-    def __init__(self, num_clases, **kwargs):
+    def __init__(self, num_clases, vocab_processor, **kwargs):
         self._num_classes = num_clases
+        self._vocab_processor = vocab_processor
 
         self._model = None
 
@@ -54,8 +67,8 @@ class NNClassifier(object):
         self._lstm_units = kwargs.pop('lstm_units', 256)
 
     def build_model(self): 
-        inputs = tf.keras.Input(shape=(self._max_seq_len, ), dtype='int32', name='inputs')
-        embed = tf.keras.layers.Embedding(len(self._vocab), 
+        inputs = tf.keras.Input(shape=(self._vocab_processor.max_seq_len, ), dtype='int32', name='inputs')
+        embed = tf.keras.layers.Embedding(len(self._vocab_processor.vocab), 
                                           self._embedding_dim,
                                           trainable=True)(inputs)
         dropout = tf.keras.layers.Dropout(self._dropout)(embed)
