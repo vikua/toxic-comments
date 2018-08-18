@@ -26,8 +26,7 @@ def prepare_data(args):
     data = pd.read_csv(args.data_path)
 
     vocab_processor = VocabularyProcessor()
-    vocab_processor.fit(data[TEXT_COL].values)
-    X = vocab_processor.transform(data[TEXT_COL].values)
+    X = vocab_processor.fit_transform(data[TEXT_COL].values)
     y = data[CLASSES].values
 
     with open(vocab_path, 'wb') as f: 
@@ -40,7 +39,10 @@ def train(args):
     X = np.load(os.path.join(args.input_path, 'X.npy'))
     y = np.load(os.path.join(args.input_path, 'y.npy'))
 
-    clf = NNClassifier(len(CLASSES), 
+    with open(os.path.join(args.input_path, 'vocab.pkl'), 'rb') as f: 
+        vocab_processor = pickle.load(f)
+
+    clf = NNClassifier(len(CLASSES), vocab_processor,
                        embedding_dim=args.embedding_dim, 
                        dropout_keep_prob=args.dropout_keep_prob)
     clf.fit(texts, labels, 

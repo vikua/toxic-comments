@@ -24,13 +24,18 @@ class VocabularyProcessor(object):
     def word_to_index(self):
         return self._word_to_index
 
-    def fit(self, data): 
+    def fit_transform(self, data): 
         self._max_seq_len = max([len(sentence) for sentence in data])
 
-        words = set([word for sentence in data for word in sentence])
+        sentences = [word_tokenize(s) for s in data]
+        words = set([word for sentence in sentences for word in sentence])
 
         self._vocab = ['<unk>'] + sorted(words)
         self._word_to_index = {word: i + 1 for i, word in enumerate(self._vocab)}
+
+        sentences = [self._vectorize_sentence(s) for s in sentences]
+        sentences = pad_sequences(sentences, maxlen=self._max_seq_len, value=0, padding='post')
+        return sentences
 
     def transform(self, data): 
         assert self._vocab, 'Vocabulary is not initialized'
