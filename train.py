@@ -9,7 +9,7 @@ from model import NNClassifier
 def main(args): 
     classes = ['toxic', 'severe_toxic', 'obscene', 'threat', 'insult', 'identity_hate']
 
-    train = pd.read_csv(os.path.join(args.data_path, 'train.csv'))[0:1000]
+    train = pd.read_csv(os.path.join(args.data_path, 'train.csv'))
     texts = train['comment_text'].values
     labels = train[classes].values
 
