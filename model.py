@@ -5,17 +5,48 @@ from nltk import word_tokenize
 from tensorflow.keras.preprocessing.sequence import pad_sequences
 
 
-class NNClassifier(object):
+class VocabularyProcessor(object):
 
-    def __init__(self, num_clases, debug=False, **kwargs):
-        self._num_classes = num_clases
-        self._debug = debug
-
-        self._model = None
-
+    def __init__(self): 
         self._max_seq_len = None
         self._vocab = None
         self._word_to_index = None
+
+    def fit(self, data): 
+        self._max_seq_len = max([len(sentence) for sentence in data])
+
+        words = set([word for sentence in data for word in sentence])
+
+        self._vocab = ['<unk>'] + sorted(words)
+        self._word_to_index = {word: i + 1 for i, word in enumerate(self._vocab)}
+
+    def transform(self, data): 
+        assert self._vocab, 'Vocabulary is not initialized'
+        assert self._word_to_index, 'Vocabulary is not initialized'
+
+        sentences = [
+            self._vectorize_sentence(word_tokenize(sentence)) 
+            for sentence in data
+        ]
+        sentences = pad_sequences(sentences, maxlen=self._max_seq_len, value=0, padding='post')
+
+        return sentences
+
+    def _vectorize_sentence(self, sentence): 
+        array = np.empty_like(sentence, dtype=np.int32)
+        for i, word in enumerate(sentence): 
+            if word not in self._vocab: 
+                word = '<unk>'
+            array[i] = self._word_to_index[word]
+        return array
+
+
+class NNClassifier(object):
+
+    def __init__(self, num_clases, **kwargs):
+        self._num_classes = num_clases
+
+        self._model = None
 
         # hyperparameters
         self._embedding_dim = kwargs.pop('embedding_dim', 100)
@@ -41,15 +72,9 @@ class NNClassifier(object):
             self._model = self.build_model()
         return self._model
 
-    def fit(self, data, labels, **kwargs): 
+    def fit(self, X, y, **kwargs): 
         epochs = kwargs.pop('epochs', 5)
         batch_size = kwargs.pop('batch_size', 128)
-
-        print('Building vocabulary and vectorizing data...')
-        self._build_vocabulary(data)
-        X = self._vectorize(data)
-        print('Done!')
-
 
         early_stopping = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=3)
         reduce_learning_rate = tf.keras.callbacks.ReduceLROnPlateau(monitor='val_loss', 
@@ -73,7 +98,7 @@ class NNClassifier(object):
                            loss='binary_crossentropy', 
                            metrics=['accuracy', auc_roc])
 
-        history = self.model.fit(X, labels, 
+        history = self.model.fit(X, y, 
                                  validation_split=0.25,
                                  batch_size=batch_size,
                                  epochs=epochs,
@@ -81,42 +106,6 @@ class NNClassifier(object):
                                             model_checkpoint])
         return history
 
-    def predict(self, data): 
-        X = self._vectorize(data)
+    def predict(self, X): 
         predictions = self.model.predict(X)
-
-    def _build_vocabulary(self, data): 
-        """ Building vocabulary and mapping from word to index and requred for 
-        transforming words into embeddings
-
-        Parameters
-        ----------
-        data : list of sorted
-            List of raw sentences
-        """
-        self._max_seq_len = max([len(sentence) for sentence in data])
-
-        words = set([word for sentence in data for word in sentence])
-
-        self._vocab = ['<unk>'] + sorted(words)
-        self._word_to_index = {word: i + 1 for i, word in enumerate(self._vocab)}
-
-    def _vectorize_sentence(self, sentence): 
-        array = np.empty_like(sentence, dtype=np.int32)
-        for i, word in enumerate(sentence): 
-            if word not in self._vocab: 
-                word = '<unk>'
-            array[i] = self._word_to_index[word]
-        return array
-
-    def _vectorize(self, data):
-        assert self._vocab, 'Vocabulary is not initialized'
-        assert self._word_to_index, 'Vocabulary is not initialized'
-
-        sentences = [
-            self._vectorize_sentence(word_tokenize(sentence)) 
-            for sentence in data
-        ]
-        sentences = pad_sequences(sentences, maxlen=self._max_seq_len, value=0, padding='post')
-
-        return sentences
+        return predictions
