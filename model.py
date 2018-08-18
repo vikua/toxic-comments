@@ -7,8 +7,9 @@ from tensorflow.keras.preprocessing.sequence import pad_sequences
 
 class NNClassifier(object):
 
-    def __init__(self, num_classes, **kwargs):
-        self._num_classes = num_classes
+    def __init__(self, num_clases, debug=False, **kwargs):
+        self._num_classes = num_clases
+        self._debug = debug
 
         self._model = None
 
@@ -19,7 +20,8 @@ class NNClassifier(object):
         # hyperparameters
         self._embedding_dim = kwargs.pop('embedding_dim', 100)
         self._dropout = 1.0 - kwargs.pop('dropout_keep_prob', 1.0)
-        self._lstm_units = kwargs.pop('lstm_units', 256)
+        self._lstm_units = kwargs.pop('lstm_units', 512)
+        self._hidden_units = kwargs.pop('hidden_units', 128)
 
     def build_model(self): 
         inputs = tf.keras.Input(shape=(self._max_seq_len, ), dtype='int32', name='inputs')
@@ -29,7 +31,8 @@ class NNClassifier(object):
         dropout = tf.keras.layers.Dropout(self._dropout)(embed)
         lstm = tf.keras.layers.LSTM(self._lstm_units)(dropout)
 
-        predictions = tf.keras.layers.Dense(self._num_classes, activation='sigmoid')(lstm)
+        dense = tf.keras.layers.Dense(self._hidden_units, activation='relu')(lstm)
+        predictions = tf.keras.layers.Dense(self._num_classes, activation='sigmoid')(dense)
 
         model = tf.keras.Model(inputs=inputs, outputs=predictions)
         return model
@@ -44,35 +47,42 @@ class NNClassifier(object):
         epochs = kwargs.pop('epochs', 5)
         batch_size = kwargs.pop('batch_size', 128)
 
-        print('Vectorizing data...')
         self._build_vocabulary(data)
         X = self._vectorize(data)
-        print('Data vectorized.')
 
         early_stopping = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=3)
         reduce_learning_rate = tf.keras.callbacks.ReduceLROnPlateau(monitor='val_loss', 
                                                                     patience=2, 
                                                                     min_lr=0.0001)
-        model_checkpoint = tf.keras.callbacks.ModelCheckpoint('/tmp/toxic_base.chkp', 
-                                                              save_best_only=True)
+        model_checkpoint = tf.keras.callbacks.ModelCheckpoint('/tmp/toxic', save_best_only=True)
+
+        def auc_roc(y_true, y_pred): 
+            value, update_op = tf.metrics.auc(y_true, y_pred)
+
+            metric_vars = [i for i in tf.local_variables() if 'auc_roc' in i.name.split('/')[1]]
+
+            for v in metric_vars: 
+                tf.add_to_collection(tf.GraphKeys.GLOBAL_VARIABLES, v)
+
+            with tf.control_dependencies([update_op]): 
+                value = tf.identity(value)
+                return value
 
         self.model.compile(optimizer=tf.train.AdamOptimizer(0.01), 
-                           loss='binary_crossentropy',
-                           metrics=['accuracy'])
+                           loss='binary_crossentropy', 
+                           metrics=['accuracy', auc_roc])
 
         history = self.model.fit(X, labels, 
                                  validation_split=0.25,
                                  batch_size=batch_size,
                                  epochs=epochs,
-                                 callbacks=[early_stopping, reduce_learning_rate, model_checkpoints],
-                                 verbose=1)
+                                 callbacks=[early_stopping, reduce_learning_rate, 
+                                            model_checkpoint])
         return history
 
     def predict(self, data): 
         X = self._vectorize(data)
         predictions = self.model.predict(X)
-        labels = ['toxic', 'severe_toxic', 'obscene', 'threat', 'insult', 'identity_hate']
-        return predictions
 
     def _build_vocabulary(self, data): 
         """ Building vocabulary and mapping from word to index and requred for 
