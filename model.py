@@ -20,8 +20,7 @@ class NNClassifier(object):
         # hyperparameters
         self._embedding_dim = kwargs.pop('embedding_dim', 100)
         self._dropout = 1.0 - kwargs.pop('dropout_keep_prob', 1.0)
-        self._lstm_units = kwargs.pop('lstm_units', 512)
-        self._hidden_units = kwargs.pop('hidden_units', 128)
+        self._lstm_units = kwargs.pop('lstm_units', 256)
 
     def build_model(self): 
         inputs = tf.keras.Input(shape=(self._max_seq_len, ), dtype='int32', name='inputs')
@@ -31,8 +30,7 @@ class NNClassifier(object):
         dropout = tf.keras.layers.Dropout(self._dropout)(embed)
         lstm = tf.keras.layers.LSTM(self._lstm_units)(dropout)
 
-        dense = tf.keras.layers.Dense(self._hidden_units, activation='relu')(lstm)
-        predictions = tf.keras.layers.Dense(self._num_classes, activation='sigmoid')(dense)
+        predictions = tf.keras.layers.Dense(self._num_classes, activation='sigmoid')(lstm)
 
         model = tf.keras.Model(inputs=inputs, outputs=predictions)
         return model
@@ -101,7 +99,7 @@ class NNClassifier(object):
         words = set([word for sentence in data for word in sentence])
 
         self._vocab = ['<unk>'] + sorted(words)
-        self._word_to_index = {word: i for i, word in enumerate(self._vocab)}
+        self._word_to_index = {word: i + 1 for i, word in enumerate(self._vocab)}
 
     def _vectorize_sentence(self, sentence): 
         array = np.empty_like(sentence, dtype=np.int32)
@@ -119,6 +117,6 @@ class NNClassifier(object):
             self._vectorize_sentence(word_tokenize(sentence)) 
             for sentence in data
         ]
-        sentences = pad_sequences(sentences, maxlen=self._max_seq_len,  value=0, padding='post')
+        sentences = pad_sequences(sentences, maxlen=self._max_seq_len, value=0, padding='post')
 
         return sentences
