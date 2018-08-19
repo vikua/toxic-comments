@@ -15,7 +15,7 @@ def train(args):
     data = pd.read_csv(os.path.join(args.input_path, 'train.csv'))
 
     vp = VocabularyProcessor()
-    texts = vp.fit_transform([TEXT_COL].values)
+    texts = vp.fit_transform(data[TEXT_COL].values)
 
     labels = data[CLASSES].values
 
