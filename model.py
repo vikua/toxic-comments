@@ -1,8 +1,20 @@
+import multiprocessing as mp
+from functools import partial
+
 import numpy as np
 import tensorflow as tf 
 
 from nltk import word_tokenize
 from tensorflow.keras.preprocessing.sequence import pad_sequences
+
+
+def chunks(lst, chunk_size): 
+    for i in range(0, len(lst), chunk_size): 
+        yield lst[i:i + chunk_size]
+
+
+def tokenize_list(lst): 
+    return [word_tokenize(s.lower()) for s in lst]
 
 
 class VocabularyProcessor(object):
@@ -24,17 +36,35 @@ class VocabularyProcessor(object):
     def word_to_index(self):
         return self._word_to_index
 
-    def fit_transform(self, data): 
-        self._max_seq_len = max([len(sentence) for sentence in data])
+    def _execute_parallel(self, data, func): 
+        pool = mp.Pool(mp.cpu_count())
+        pool_results = pool.map(func, list(chunks(data, 1000)))
+        pool.close()
+        pool.join()
 
-        sentences = [word_tokenize(s) for s in data]
+        results = []
+        for result in pool_results:
+            results.extend(result)
+
+        return results
+
+    def fit_transform(self, data): 
+        print('Building vocabulary...')
+        sentences = self._execute_parallel(data, tokenize_list)
+        self._max_seq_len = max([len(sentence) for sentence in sentences])
+
         words = set([word for sentence in sentences for word in sentence])
 
         self._vocab = ['<unk>'] + sorted(words)
         self._word_to_index = {word: i + 1 for i, word in enumerate(self._vocab)}
 
-        sentences = [self._vectorize_sentence(s) for s in sentences]
+        print('Mapping words to indices...')
+        sentences = self._execute_parallel(sentences, self._vectorize)
+
+        print('Padding sequences...')
         sentences = pad_sequences(sentences, maxlen=self._max_seq_len, value=0, padding='post')
+        
+        print('Done!')
         return sentences
 
     def transform(self, data): 
@@ -49,13 +79,12 @@ class VocabularyProcessor(object):
 
         return sentences
 
+    def _vectorize(self, sentences): 
+        return [self._vectorize_sentence(sentence) for sentence in sentences]
+
     def _vectorize_sentence(self, sentence): 
-        array = np.empty_like(sentence, dtype=np.int32)
-        for i, word in enumerate(sentence): 
-            if word not in self._vocab: 
-                word = '<unk>'
-            array[i] = self._word_to_index[word]
-        return array
+        unk = self._word_to_index['<unk>']
+        return np.array([self._word_to_index.get(word, unk) for word in sentence])
 
 
 class NNClassifier(object):
@@ -73,8 +102,9 @@ class NNClassifier(object):
 
     def build_model(self): 
         inputs = tf.keras.Input(shape=(self._vocab_processor.max_seq_len, ), dtype='int32', name='inputs')
-        embed = tf.keras.layers.Embedding(len(self._vocab_processor.vocab), 
+        embed = tf.keras.layers.Embedding(len(self._vocab_processor.vocab) + 1, 
                                           self._embedding_dim,
+                                          mask_zero=True,
                                           trainable=True)(inputs)
         dropout = tf.keras.layers.Dropout(self._dropout)(embed)
         lstm = tf.keras.layers.LSTM(self._lstm_units)(dropout)
