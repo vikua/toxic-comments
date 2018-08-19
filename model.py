@@ -63,7 +63,7 @@ class VocabularyProcessor(object):
 
         print('Padding sequences...')
         sentences = pad_sequences(sentences, maxlen=self._max_seq_len, value=0, padding='post')
-        
+
         print('Done!')
         return sentences
 
@@ -127,7 +127,8 @@ class NNClassifier(object):
         early_stopping = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=3)
         reduce_learning_rate = tf.keras.callbacks.ReduceLROnPlateau(monitor='val_loss', 
                                                                     patience=2, 
-                                                                    min_lr=0.0001)
+                                                                    min_lr=0.0001, 
+                                                                    verbose=1)
         model_checkpoint = tf.keras.callbacks.ModelCheckpoint('/tmp/toxic', save_best_only=True)
 
         def auc_roc(y_true, y_pred): 
@@ -142,7 +143,7 @@ class NNClassifier(object):
                 value = tf.identity(value)
                 return value
 
-        self.model.compile(optimizer=tf.train.AdamOptimizer(0.01), 
+        self.model.compile(optimizer=tf.keras.optimizers.Adam(lr=0.01), 
                            loss='binary_crossentropy', 
                            metrics=['accuracy', auc_roc])
 
