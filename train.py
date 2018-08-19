@@ -41,4 +41,4 @@ if __name__ == '__main__':
     parser.add_argument('--embedding-dim', dest='embedding_dim', type=int, default=100)
 
     args = parser.parse_args()
-    # train(args)
+    train(args)
