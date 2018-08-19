@@ -19,7 +19,7 @@ def train(args):
 
     labels = data[CLASSES].values
 
-    clf = NNClassifier(len(CLASSES), vocab_processor,
+    clf = NNClassifier(len(CLASSES), vp,
                        embedding_dim=args.embedding_dim, 
                        dropout_keep_prob=args.dropout_keep_prob)
     clf.fit(texts, labels, 
