@@ -14,17 +14,29 @@ CLASSES = ['toxic', 'severe_toxic', 'obscene', 'threat', 'insult', 'identity_hat
 def train(args): 
     data = pd.read_csv(os.path.join(args.input_path, 'train.csv'))
 
-    vp = VocabularyProcessor()
-    texts = vp.fit_transform(data[TEXT_COL].values)
+    indices = np.random.permutation(data.shape[0])
 
-    labels = data[CLASSES].values
+    split = int(data.shape[0] * 0.8)
+    train_idx, test_idx = indices[:split], indices[split:]
+
+    train_data = data.iloc[train_idx]
+    test_data = data.iloc[test_idx]
+
+    vp = VocabularyProcessor()
+    X_train = vp.fit_transform(train_data[TEXT_COL].values)
+    y_train = train_data[CLASSES].values
+
+    X_test = vp.transform(test_data[TEXT_COL].values)
+    y_test = test_data[CLASSES].values
 
     clf = NNClassifier(len(CLASSES), vp,
                        embedding_dim=args.embedding_dim, 
                        dropout_keep_prob=args.dropout_keep_prob)
-    clf.fit(texts, labels, 
+    clf.fit(X_train, y_train, X_test, y_test, 
             epochs=args.epochs,
             batch_size=args.batch_size)
+
+    clf.save()
 
 
 if __name__ == '__main__': 
@@ -32,6 +44,8 @@ if __name__ == '__main__':
 
     parser.add_argument('--input-path', dest='input_path', type=str, 
                         help='Path to input ')
+    parser.add_argument('--output-path', dest='output_path', type=str,
+                        help='Path to save the model')
     parser.add_argument('--epochs', dest='epochs', type=int, default=5,
                         help='Number of epochs')
     parser.add_argument('--batch-size', dest='batch_size', type=int, default=64,

@@ -98,7 +98,7 @@ class NNClassifier(object):
         # hyperparameters
         self._embedding_dim = kwargs.pop('embedding_dim', 100)
         self._dropout = 1.0 - kwargs.pop('dropout_keep_prob', 1.0)
-        self._lstm_units = kwargs.pop('lstm_units', 256)
+        self._lstm_units = kwargs.pop('lstm_units', 128)
 
     def build_model(self): 
         inputs = tf.keras.Input(shape=(self._vocab_processor.max_seq_len, ), dtype='int32', name='inputs')
@@ -114,13 +114,16 @@ class NNClassifier(object):
         model = tf.keras.Model(inputs=inputs, outputs=predictions)
         return model
 
+    def save(self, path): 
+        self.model.save(path)
+
     @property
     def model(self):
         if not self._model:
             self._model = self.build_model()
         return self._model
 
-    def fit(self, X, y, **kwargs): 
+    def fit(self, X_train, y_train, X_test, y_test, **kwargs): 
         epochs = kwargs.pop('epochs', 5)
         batch_size = kwargs.pop('batch_size', 128)
 
@@ -147,8 +150,8 @@ class NNClassifier(object):
                            loss='binary_crossentropy', 
                            metrics=['accuracy', auc_roc])
 
-        history = self.model.fit(X, y, 
-                                 validation_split=0.25,
+        history = self.model.fit(X_train, y_train,
+                                 validation_data=(X_test, y_test),
                                  batch_size=batch_size,
                                  epochs=epochs,
                                  callbacks=[early_stopping, reduce_learning_rate, 
@@ -158,3 +161,15 @@ class NNClassifier(object):
     def predict(self, X): 
         predictions = self.model.predict(X)
         return predictions
+
+
+class ClassifierWrapper(object):
+
+    def __init__(self, classifier, vocab_processor):
+        self.classifier = classifier
+        self.vocab_processor = vocab_processor
+
+    def fit(self, X_train, y_train, X_test, y_test): 
+        pass
+    def predict(self, X): 
+        pass
