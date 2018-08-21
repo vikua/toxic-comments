@@ -171,5 +171,6 @@ class ClassifierWrapper(object):
 
     def fit(self, X_train, y_train, X_test, y_test): 
         pass
+        
     def predict(self, X): 
         pass
