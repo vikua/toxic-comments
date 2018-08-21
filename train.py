@@ -36,7 +36,7 @@ def train(args):
             epochs=args.epochs,
             batch_size=args.batch_size)
 
-    clf.save()
+    clf.save(os.path.join(args.output_path, 'toxic.h5'))
 
 
 if __name__ == '__main__': 
