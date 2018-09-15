@@ -30,7 +30,7 @@ def train(args):
     X_test = vp.transform(test_data[TEXT_COL].values)
     y_test = test_data[CLASSES].values
 
-    with open(os.path.join(args.output_path, 'vp.pkl')) as f: 
+    with open(os.path.join(args.output_path, 'vp.pkl'), 'wb') as f: 
         cloudpickle.dump(vp, f)
 
     clf = NNClassifier(len(CLASSES), vp,
