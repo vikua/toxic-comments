@@ -6,85 +6,50 @@ import tensorflow as tf
 
 from nltk import word_tokenize
 from tensorflow.keras.preprocessing.sequence import pad_sequences
+from tensorflow.keras.preprocessing.text import Tokenizer
 
 
-def chunks(lst, chunk_size): 
-    for i in range(0, len(lst), chunk_size): 
-        yield lst[i:i + chunk_size]
+class VocabularyProcessor(object): 
 
-
-def tokenize_list(lst): 
-    return [word_tokenize(s.lower()) for s in lst]
-
-
-class VocabularyProcessor(object):
-
-    def __init__(self): 
+    def __init__(self, max_features=None): 
+        self._max_features = max_features
         self._max_seq_len = None
-        self._vocab = None
-        self._word_to_index = None
+        self._tokenizer = None
 
     @property
-    def max_seq_len(self):
+    def word_index(self): 
+        if not self._tokenizer: 
+            raise ValueError('Tokenizer was not created. Please call fit method')
+        return self._tokenizer.word_index
+
+    @property
+    def max_seq_len(self): 
         return self._max_seq_len
 
     @property
-    def vocab(self):
-        return self._vocab
+    def max_features(self): 
+        return self._max_features
 
-    @property
-    def word_to_index(self):
-        return self._word_to_index
+    def fit(self, data): 
+        self._tokenizer = Tokenizer(num_words=self._max_features, 
+                                    oov_token='<unk>')
 
-    def _execute_parallel(self, data, func): 
-        pool = mp.Pool(mp.cpu_count())
-        pool_results = pool.map(func, list(chunks(data, 1000)))
-        pool.close()
-        pool.join()
+        self._tokenizer.fit_on_texts(list(data))
 
-        results = []
-        for result in pool_results:
-            results.extend(result)
+        if not self._max_features: 
+            self._max_features = len(self._tokenizer.word_index)
 
-        return results
-
-    def fit_transform(self, data): 
-        print('Building vocabulary...')
-        sentences = self._execute_parallel(data, tokenize_list)
-        self._max_seq_len = max([len(sentence) for sentence in sentences])
-
-        words = set([word for sentence in sentences for word in sentence])
-
-        self._vocab = ['<unk>'] + sorted(words)
-        self._word_to_index = {word: i + 1 for i, word in enumerate(self._vocab)}
-
-        print('Mapping words to indices...')
-        sentences = self._execute_parallel(sentences, self._vectorize)
-
-        print('Padding sequences...')
-        sentences = pad_sequences(sentences, maxlen=self._max_seq_len, value=0, padding='post')
-
-        print('Done!')
-        return sentences
+        transformed = self._tokenizer.texts_to_sequences(data)
+        self._max_seq_len = max([len(x) for x in transformed])
 
     def transform(self, data): 
-        assert self._vocab, 'Vocabulary is not initialized'
-        assert self._word_to_index, 'Vocabulary is not initialized'
+        seq = self._tokenizer.texts_to_sequences(data)
+        seq = pad_sequences(seq, maxlen=self._max_seq_len, padding='post')
+        return seq
 
-        sentences = [
-            self._vectorize_sentence(word_tokenize(sentence)) 
-            for sentence in data
-        ]
-        sentences = pad_sequences(sentences, maxlen=self._max_seq_len, value=0, padding='post')
-
-        return sentences
-
-    def _vectorize(self, sentences): 
-        return [self._vectorize_sentence(sentence) for sentence in sentences]
-
-    def _vectorize_sentence(self, sentence): 
-        unk = self._word_to_index['<unk>']
-        return np.array([self._word_to_index.get(word, unk) for word in sentence])
+    def fit_transform(self, data): 
+        self.fit(data)
+        return self.transform(data)
 
 
 class NNClassifier(object):
@@ -97,21 +62,32 @@ class NNClassifier(object):
 
         # hyperparameters
         self._embedding_dim = kwargs.pop('embedding_dim', 100)
-        self._dropout = 1.0 - kwargs.pop('dropout_keep_prob', 1.0)
+        self._dropout = kwargs.pop('dropout', 0)
         self._lstm_units = kwargs.pop('lstm_units', 128)
+        self._hidden_units = kwargs.pop('hidden_units', 50)
 
     def build_model(self): 
         inputs = tf.keras.Input(shape=(self._vocab_processor.max_seq_len, ), dtype='int32', name='inputs')
-        embed = tf.keras.layers.Embedding(len(self._vocab_processor.vocab) + 1, 
+
+        embed = tf.keras.layers.Embedding(self.max_features + 1, 
                                           self._embedding_dim,
                                           mask_zero=True,
                                           trainable=True)(inputs)
-        dropout = tf.keras.layers.Dropout(self._dropout)(embed)
-        lstm = tf.keras.layers.LSTM(self._lstm_units)(dropout)
+        
+        lstm = tf.keras.layers.LSTM(self._lstm_units, return_sequences=True)(embed)
+        
+        max_pool = tf.keras.layers.GlobalMaxPool1D()(lstm)
+        
+        dropout = tf.keras.layers.Dropout(self._dropout)(max_pool)
+        
+        dense = tf.keras.layers.Dense(self._hidden_units, activation='relu')(dropout)
+        
+        dropout = tf.keras.layers,Dropout(self._dropout)(dense)
 
-        predictions = tf.keras.layers.Dense(self._num_classes, activation='sigmoid')(lstm)
+        predictions = tf.keras.layers.Dense(self._num_classes, activation='sigmoid')(dropout)
 
         model = tf.keras.Model(inputs=inputs, outputs=predictions)
+
         return model
 
     def save(self, path): 
@@ -163,14 +139,22 @@ class NNClassifier(object):
         return predictions
 
 
-class ClassifierWrapper(object):
+class ToxicCommentsClassifier(object):
 
     def __init__(self, classifier, vocab_processor):
         self.classifier = classifier
         self.vocab_processor = vocab_processor
 
-    def fit(self, X_train, y_train, X_test, y_test): 
-        pass
-        
+    def fit(self, X_train, y_train, X_test, y_test, **kwargs): 
+        epochs = kwargs.pop('epochs', 5)
+        batch_size = kwargs.pop('batch_size', 128)
+
+        X_train = self.vocab_processor.fit_transform(X_train)
+        X_test = self.vocab_processor.transform(X_test)
+
+        classifier.fit(X_train, y_train, X_test, y_test, 
+                       epochs=epochs, batch_size=batch_size)
+
     def predict(self, X): 
-        pass
+        X = self.vocab_processor.transform(X)
+        predict = self.classifier.predict(X)

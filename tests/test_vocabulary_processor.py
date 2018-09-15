@@ -23,31 +23,24 @@ def vocab_processor(sentences):
 
 
 def test_fit_creates_vocabulary(vocab_processor): 
-    assert vocab_processor.max_seq_len == 13
-    assert vocab_processor.vocab == [
-        '<unk>', '!', "'m", ',', '.', '?', 'about', 'actual', 'background', 
-        'care', 'colour', "d'aww", 'edit', 'edits', 'fan', 'formatting', 'hardcore', 
-        'he', 'hey', 'i', 'info', 'made', 'man', 'matches', 'metallica', 'more', 'my', 
-        'not', 'really', 'reverted', 'seemingly', 'seems', 'stuck', 'than', 'the', 'this', 
-        'to', 'trying', 'under', 'username', 'war', 'were', 'why', 'with',
-    ]
-    assert vocab_processor.word_to_index == {
-        '<unk>': 1, '!': 2, "'m": 3, ',': 4, '.': 5, '?': 6, 'about': 7, 
-        'actual': 8, 'background': 9, 'care': 10, 'colour': 11, "d'aww": 12, 
-        'edit': 13, 'edits': 14, 'fan': 15, 'formatting': 16, 'hardcore': 17, 
-        'he': 18, 'hey': 19, 'i': 20, 'info': 21, 'made': 22, 'man': 23, 'matches': 24, 
-        'metallica': 25, 'more': 26, 'my': 27, 'not': 28, 'really': 29, 'reverted': 30, 
-        'seemingly': 31, 'seems': 32, 'stuck': 33, 'than': 34, 'the': 35, 'this': 36, 
-        'to': 37, 'trying': 38, 'under': 39, 'username': 40, 'war': 41, 'were': 42, 
-        'why': 43, 'with': 44
+    assert vocab_processor.max_seq_len == 12
+    assert vocab_processor.max_features == 39
+    assert vocab_processor.word_index == {
+        'the': 1, 'he': 2, "i'm": 3, 'to': 4, 'why': 5, 'edits': 6, 'made': 7, 
+        'under': 8, 'my': 9, 'username': 10, 'hardcore': 11, 'metallica': 12, 'fan': 13, 
+        'were': 14, 'reverted': 15, "d'aww": 16, 'matches': 17, 'this': 18, 'background': 19, 
+        'colour': 20, 'seemingly': 21, 'stuck': 22, 'with': 23, 'hey': 24, 'man': 25, 
+        'really': 26, 'not': 27, 'trying': 28, 'edit': 29, 'war': 30, 'seems': 31, 
+        'care': 32, 'more': 33, 'about': 34, 'formatting': 35, 'than': 36, 'actual': 37, 
+        'info': 38, '<unk>': 39,
     }
 
 def test_transform(vocab_processor, sentences):
     expected = [
-        [1, 35, 14, 22, 39, 27, 40,  1,  1,  1, 42, 30,  6],
-        [1,  2,  1, 24, 36,  9, 11,  1,  3, 31, 33, 44,  5],
-        [1, 23,  4,  1,  3, 29, 28, 38, 37, 13, 41,  5,  0],
-        [1, 32, 37, 10, 26,  7, 35, 16, 34, 35,  8, 21,  5]
-    ] 
+        [ 5,  1,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15],
+        [16,  2, 17, 18, 19, 20,  3, 21, 22, 23,  0,  0],
+        [24, 25,  3, 26, 27, 28,  4, 29, 30,  0,  0,  0],
+        [ 2, 31,  4, 32, 33, 34,  1, 35, 36,  1, 37, 38],
+    ]
     x = vocab_processor.transform(sentences)
     assert np.array_equal(np.array(expected), x) 
