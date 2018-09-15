@@ -103,9 +103,9 @@ class NNClassifier(object):
         epochs = kwargs.pop('epochs', 5)
         batch_size = kwargs.pop('batch_size', 128)
 
-        early_stopping = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=3)
+        early_stopping = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=4)
         reduce_learning_rate = tf.keras.callbacks.ReduceLROnPlateau(monitor='val_loss', 
-                                                                    patience=2, 
+                                                                    patience=3, 
                                                                     min_lr=0.0001, 
                                                                     verbose=1)
         model_checkpoint = tf.keras.callbacks.ModelCheckpoint('/tmp/toxic', save_best_only=True)
