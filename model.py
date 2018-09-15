@@ -152,8 +152,8 @@ class ToxicCommentsClassifier(object):
         X_train = self.vocab_processor.fit_transform(X_train)
         X_test = self.vocab_processor.transform(X_test)
 
-        classifier.fit(X_train, y_train, X_test, y_test, 
-                       epochs=epochs, batch_size=batch_size)
+        self.classifier.fit(X_train, y_train, X_test, y_test, 
+                            epochs=epochs, batch_size=batch_size)
 
     def predict(self, X): 
         X = self.vocab_processor.transform(X)
