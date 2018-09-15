@@ -69,7 +69,7 @@ class NNClassifier(object):
     def build_model(self): 
         inputs = tf.keras.Input(shape=(self._vocab_processor.max_seq_len, ), dtype='int32', name='inputs')
 
-        embed = tf.keras.layers.Embedding(self.max_features + 1, 
+        embed = tf.keras.layers.Embedding(self._vocab_processor.max_features + 1, 
                                           self._embedding_dim,
                                           mask_zero=True,
                                           trainable=True)(inputs)
