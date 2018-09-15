@@ -5,7 +5,7 @@ import pandas as pd
 import numpy as np
 import cloudpickle
 
-from model import NNClassifier, VocabularyProcessor, ToxicCommentsClassifier
+from model import NNClassifier, VocabularyProcessor
 
 
 TEXT_COL = 'comment_text'
@@ -24,23 +24,24 @@ def train(args):
     test_data = data.iloc[test_idx]
 
     vp = VocabularyProcessor(args.max_features)
-    clf = NNClassifier(len(CLASSES), vp,
-                       embedding_dim=args.embedding_dim, 
-                       dropout=args.dropout,
-                       hidden_units=args.hidden_units)
-    classifier = ToxicCommentsClassifier(clf, vp)
 
-    X_train = train_data[TEXT_COL].values
+    X_train = vp.fit_transform(train_data[TEXT_COL].values)
     y_train = train_data[CLASSES].values
 
-    X_test = test_data[TEXT_COL].values
+    X_test = vp.transform(test_data[TEXT_COL].values)
     y_test = test_data[CLASSES].values
 
-    classifier.fit(X_train, y_train, X_test, y_test, 
-                   epochs=args.epochs, batch_size=args.batch_size)
+    clf = NNClassifier(len(CLASSES), vp,
+                       embedding_dim=args.embedding_dim, 
+                       dropout=args.dropout)
 
-    with open(os.path.join(args.output_path, 'toxic.pkl'), 'wb') as f: 
-        cloudpickle.dump(classifier, f)
+    clf.fit(X_train, y_train, X_test, y_tesst, 
+            epochs=args.epochs, batch_size=args.batch_size)
+
+    with open(os.path.join(args.output_path, 'vocab.pkl'), 'wb') as f: 
+        cloudpickle.dump(vp, f)
+
+    clf.save(os.path.join(args.output_path, 'toxic.h5'))
 
 
 if __name__ == '__main__': 

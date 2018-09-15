@@ -83,7 +83,7 @@ class NNClassifier(object):
         dense = tf.keras.layers.Dense(self._hidden_units, activation='relu')(dropout)
         
         dropout = tf.keras.layers.Dropout(self._dropout)(dense)
-
+        
         predictions = tf.keras.layers.Dense(self._num_classes, activation='sigmoid')(dropout)
 
         model = tf.keras.Model(inputs=inputs, outputs=predictions)
