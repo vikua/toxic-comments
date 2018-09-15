@@ -71,7 +71,7 @@ class NNClassifier(object):
 
         embed = tf.keras.layers.Embedding(self._vocab_processor.max_features + 1, 
                                           self._embedding_dim,
-                                          mask_zero=True,
+                                          mask_zero=False,
                                           trainable=True)(inputs)
         
         lstm = tf.keras.layers.LSTM(self._lstm_units, return_sequences=True)(embed)
