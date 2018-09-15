@@ -26,7 +26,8 @@ def train(args):
     vp = VocabularyProcessor(args.max_features)
     clf = NNClassifier(len(CLASSES), vp,
                        embedding_dim=args.embedding_dim, 
-                       dropout=args.dropout)
+                       dropout=args.dropout,
+                       hidden_units=args.hidden_units)
     classifier = ToxicCommentsClassifier(clf, vp)
 
     X_train = train_data[TEXT_COL].values
@@ -56,6 +57,7 @@ if __name__ == '__main__':
     parser.add_argument('--dropout', dest='dropout', type=float, 
                         default=0.5, help='Dropout - fraction of units to drop')
     parser.add_argument('--embedding-dim', dest='embedding_dim', type=int, default=100)
+    parser.add_argument('--hidden-units', dest='hidden_units', type=int, default=50)
     parser.add_argument('--max-features', dest='max_features', type=int, default=None)
 
     args = parser.parse_args()
