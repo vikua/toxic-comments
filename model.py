@@ -83,7 +83,7 @@ class NNClassifier(object):
         dense = tf.keras.layers.Dense(self._hidden_units, activation='relu')(dropout)
         
         dropout = tf.keras.layers.Dropout(self._dropout)(dense)
-        
+
         predictions = tf.keras.layers.Dense(self._num_classes, activation='sigmoid')(dropout)
 
         model = tf.keras.Model(inputs=inputs, outputs=predictions)
@@ -137,24 +137,3 @@ class NNClassifier(object):
     def predict(self, X): 
         predictions = self.model.predict(X)
         return predictions
-
-
-class ToxicCommentsClassifier(object):
-
-    def __init__(self, classifier, vocab_processor):
-        self.classifier = classifier
-        self.vocab_processor = vocab_processor
-
-    def fit(self, X_train, y_train, X_test, y_test, **kwargs): 
-        epochs = kwargs.pop('epochs', 5)
-        batch_size = kwargs.pop('batch_size', 128)
-
-        X_train = self.vocab_processor.fit_transform(X_train)
-        X_test = self.vocab_processor.transform(X_test)
-
-        self.classifier.fit(X_train, y_train, X_test, y_test, 
-                            epochs=epochs, batch_size=batch_size)
-
-    def predict(self, X): 
-        X = self.vocab_processor.transform(X)
-        predict = self.classifier.predict(X)

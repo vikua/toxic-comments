@@ -36,7 +36,7 @@ def train(args):
                        dropout=args.dropout, 
                        hidden_units=args.hidden_units)
 
-    clf.fit(X_train, y_train, X_test, y_tesst, 
+    clf.fit(X_train, y_train, X_test, y_test, 
             epochs=args.epochs, batch_size=args.batch_size)
 
     with open(os.path.join(args.output_path, 'vocab.pkl'), 'wb') as f: 
