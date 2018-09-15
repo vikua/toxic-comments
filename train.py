@@ -33,7 +33,8 @@ def train(args):
 
     clf = NNClassifier(len(CLASSES), vp,
                        embedding_dim=args.embedding_dim, 
-                       dropout=args.dropout)
+                       dropout=args.dropout, 
+                       hidden_units=args.hidden_units)
 
     clf.fit(X_train, y_train, X_test, y_tesst, 
             epochs=args.epochs, batch_size=args.batch_size)
