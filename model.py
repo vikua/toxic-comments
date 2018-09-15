@@ -64,7 +64,7 @@ class NNClassifier(object):
         self._embedding_dim = kwargs.pop('embedding_dim', 100)
         self._dropout = kwargs.pop('dropout', 0)
         self._lstm_units = kwargs.pop('lstm_units', 128)
-        self._hidden_units = kwargs.pop('hidden_units', 50)
+        self._hidden_units = kwargs.pop('hidden_units', 50) 
 
     def build_model(self): 
         inputs = tf.keras.Input(shape=(self._vocab_processor.max_seq_len, ), dtype='int32', name='inputs')
@@ -82,7 +82,7 @@ class NNClassifier(object):
         
         dense = tf.keras.layers.Dense(self._hidden_units, activation='relu')(dropout)
         
-        dropout = tf.keras.layers,Dropout(self._dropout)(dense)
+        dropout = tf.keras.layers.Dropout(self._dropout)(dense)
 
         predictions = tf.keras.layers.Dense(self._num_classes, activation='sigmoid')(dropout)
 
