@@ -9,6 +9,9 @@ from tensorflow.keras.preprocessing.sequence import pad_sequences
 from tensorflow.keras.preprocessing.text import Tokenizer
 
 
+CLASSES = ['toxic', 'severe_toxic', 'obscene', 'threat', 'insult', 'identity_hate']
+
+
 class VocabularyProcessor(object): 
 
     def __init__(self, max_features=None): 
@@ -65,6 +68,7 @@ class NNClassifier(object):
         self._dropout = kwargs.pop('dropout', 0)
         self._lstm_units = kwargs.pop('lstm_units', 128)
         self._hidden_units = kwargs.pop('hidden_units', 50) 
+        self._model_path = kwargs.pop('model_path', '/tmp/toxic')
 
     def build_model(self): 
         inputs = tf.keras.Input(shape=(self._vocab_processor.max_seq_len, ), dtype='int32', name='inputs')
@@ -93,6 +97,9 @@ class NNClassifier(object):
     def save(self, path): 
         self.model.save(path)
 
+    def load(self, path): 
+        self.model.load_weights(path)
+
     @property
     def model(self):
         if not self._model:
@@ -108,7 +115,7 @@ class NNClassifier(object):
                                                                     patience=3, 
                                                                     min_lr=0.0001, 
                                                                     verbose=1)
-        model_checkpoint = tf.keras.callbacks.ModelCheckpoint('/tmp/toxic', save_best_only=True)
+        model_checkpoint = tf.keras.callbacks.ModelCheckpoint(self._model_path, save_best_only=True)
 
         def auc_roc(y_true, y_pred): 
             value, update_op = tf.metrics.auc(y_true, y_pred)
@@ -137,3 +144,23 @@ class NNClassifier(object):
     def predict(self, X): 
         predictions = self.model.predict(X)
         return predictions
+
+
+class E2EClassifier(object): 
+
+    def __init__(self, vocab_processor, clf):
+        self._vocab_processor = vocab_processor
+        self._clf = clf
+
+    def predict_proba(self, arr): 
+        x = self._vocab_processor.transform(arr)
+        return self._clf.predict(x)
+
+    def predict(self, arr, threshold=0.5):
+        predictions = self.predict_proba(arr)
+        result = []
+        for pred in predictions:
+            labels = [l for p, l in zip(pred, CLASSES) if p >= threshold]
+            result.append(labels)
+        return result
+
