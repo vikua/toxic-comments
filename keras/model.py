@@ -224,7 +224,7 @@ def train(args):
         cloudpickle.dump(vp, f)
 
     # creating classifier wrapper for e2e predictions
-    e2e = E2EClassifier(vocab_processor, clf)
+    e2e = E2EClassifier(vp, clf)
     with open(os.path.join(args.output_path, 'keras.pkl'), 'wb') as f: 
         cloudpickle.dump(e2e, f)
 
