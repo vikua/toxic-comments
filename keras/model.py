@@ -155,7 +155,7 @@ class NNClassifier(object):
 
     def __getstate__(self): 
         state = self.__dict__.copy()
-        state['session'] = None
+        state['session'] = None 
 
         if state.get('_model'): 
             with tempfile.NamedTemporaryFile(suffix='.hdf5', delete=True) as fd:
@@ -203,8 +203,8 @@ def train(args):
     split = int(data.shape[0] * 0.8)
     train_idx, test_idx = indices[:split], indices[split:]
 
-    train_data = data.iloc[train_idx]
-    test_data = data.iloc[test_idx]
+    train_data = data.iloc[train_idx][0:10000]
+    test_data = data.iloc[test_idx][0:100]
 
     vp = VocabularyProcessor(args.max_features)
 
