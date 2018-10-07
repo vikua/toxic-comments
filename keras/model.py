@@ -241,9 +241,6 @@ def predict(args):
 
 
 if __name__ == '__main__': 
-    save_models()
-
-if __name__ == '__main__1': 
     parser = argparse.ArgumentParser(description='Simple toxic comments classifier')
 
     parser.add_argument('--embedding-dim', dest='embedding_dim', type=int, default=100)
