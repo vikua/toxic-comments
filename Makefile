@@ -12,12 +12,12 @@ keras-install:
 
 
 keras-train: 
-	python ./keras/run.py train --input-path ./data --output-path ./bin --epochs 20 \
+	python ./keras/model.py train --input-path ./data --output-path ./bin --epochs 20 \
 		--batch-size 128 --max-features 60000
 
 
 keras-predict: 
-	python ./keras/run.py predict --model-path ./bin/keras.pkl 
+	python ./keras/model.py predict --model-path ./bin/keras.pkl 
 
 
 keras-test:
