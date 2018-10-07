@@ -229,21 +229,6 @@ def train(args):
         cloudpickle.dump(e2e, f)
 
 
-def save_models(): 
-    with open('/Users/victor/Project/other/toxic-comments/bin/vocab.pkl', 'rb') as f: 
-        vp = cloudpickle.load(f)
-
-    clf = NNClassifier(6, vp,
-                       embedding_dim=100, 
-                       dropout=0.5, 
-                       hidden_units=50)
-    clf.load('/Users/victor/Project/other/toxic-comments/bin/toxic.h5')
-
-    e2e = E2EClassifier(vp, clf)
-    with open('/Users/victor/Project/other/toxic-comments/bin/keras.pkl', 'wb') as f: 
-        cloudpickle.dump(e2e, f)
-
-
 def predict(args): 
     with open(args.model_path, 'rb') as f: 
         clf = cloudpickle.load(f)
