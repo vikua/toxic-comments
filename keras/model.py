@@ -18,6 +18,19 @@ TEXT_COL = 'comment_text'
 CLASSES = ['toxic', 'severe_toxic', 'obscene', 'threat', 'insult', 'identity_hate']
 
 
+def auc_roc(y_true, y_pred): 
+    value, update_op = tf.metrics.auc(y_true, y_pred)
+
+    metric_vars = [i for i in tf.local_variables() if 'auc_roc' in i.name.split('/')[1]]
+
+    for v in metric_vars: 
+        tf.add_to_collection(tf.GraphKeys.GLOBAL_VARIABLES, v)
+
+    with tf.control_dependencies([update_op]): 
+        value = tf.identity(value)
+        return value
+
+
 class VocabularyProcessor(object): 
 
     def __init__(self, max_features=None): 
@@ -122,18 +135,6 @@ class NNClassifier(object):
                                                                     min_lr=0.0001, 
                                                                     verbose=1)
         model_checkpoint = tf.keras.callbacks.ModelCheckpoint(self._model_path, save_best_only=True)
-
-        def auc_roc(y_true, y_pred): 
-            value, update_op = tf.metrics.auc(y_true, y_pred)
-
-            metric_vars = [i for i in tf.local_variables() if 'auc_roc' in i.name.split('/')[1]]
-
-            for v in metric_vars: 
-                tf.add_to_collection(tf.GraphKeys.GLOBAL_VARIABLES, v)
-
-            with tf.control_dependencies([update_op]): 
-                value = tf.identity(value)
-                return value
 
         self.model.compile(optimizer=tf.keras.optimizers.Adam(lr=0.01), 
                            loss='binary_crossentropy', 
