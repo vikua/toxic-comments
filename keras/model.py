@@ -158,8 +158,8 @@ class NNClassifier(object):
 
         if state.get('_model'): 
             with tempfile.NamedTemporaryFile(suffix='.hdf5', delete=True) as fd:
-                tf.keras.models.save_model(state['_model'], fd.name, overwrite=True)
-                state['_model'] = fd.read()       
+                state['_model'].save(fd.name, overwrite=True)
+                state['_model'] = fd.read()
         
         return state
 
@@ -169,7 +169,8 @@ class NNClassifier(object):
                 fd.write(state['_model'])
                 fd.flush()
 
-                state['_model'] = tf.keras.models.load_model(fd.name)
+                state['_model'] = self.model
+                state['_model'] = state['_model'].load_weights(fd.name)
         self.__dict__.update(state)
 
 
